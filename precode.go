@@ -54,7 +54,11 @@ func getTasks(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 
-	w.Write(resp)
+	_, err = w.Write(resp)
+	if err != nil {
+		fmt.Printf("Ошибка: %v", err)
+		return
+	}
 }
 
 // Обработчик для добавления новой задачи
@@ -72,7 +76,11 @@ func postTask(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
+	_, ok := tasks[task.ID]
+	if ok {
+		http.Error(w, "Такая задача уже есть", http.StatusBadRequest)
+		return
+	}
 	tasks[task.ID] = task
 
 	w.Header().Set("Content-Type", "application/json")
@@ -91,13 +99,18 @@ func getTask(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := json.Marshal(task)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(resp)
+
+	_, err = w.Write(resp)
+	if err != nil {
+		fmt.Printf("Ошибка: %v", err)
+		return
+	}
 }
 
 // Обработчик для удаления задачи по ID
@@ -105,7 +118,7 @@ func deleteTask(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	_, ok := tasks[id]
 	if !ok {
-		http.Error(w, "Bad request", 400)
+		http.Error(w, "Задача не найдена", http.StatusBadRequest)
 		return
 	}
 	delete(tasks, id)
